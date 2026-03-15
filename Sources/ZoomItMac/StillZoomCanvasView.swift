@@ -764,6 +764,14 @@ final class StillZoomCanvasView: NSView {
             return nil
         }
 
+        guard let fullImage = renderFullSnapshot() else {
+            return nil
+        }
+
+        guard captureRect != bounds.integral else {
+            return fullImage
+        }
+
         let scaleFactor = window?.backingScaleFactor ?? screenScaleFactor
         let pixelsWide = max(1, Int(captureRect.width * scaleFactor))
         let pixelsHigh = max(1, Int(captureRect.height * scaleFactor))
@@ -788,13 +796,55 @@ final class StillZoomCanvasView: NSView {
 
         NSGraphicsContext.saveGraphicsState()
         NSGraphicsContext.current = graphicsContext
+        graphicsContext.cgContext.scaleBy(x: scaleFactor, y: scaleFactor)
         graphicsContext.cgContext.clear(CGRect(origin: .zero, size: captureRect.size))
-        graphicsContext.cgContext.translateBy(x: -captureRect.minX, y: -captureRect.minY)
+        fullImage.draw(
+            in: CGRect(
+                x: -captureRect.minX,
+                y: -captureRect.minY,
+                width: bounds.width,
+                height: bounds.height
+            )
+        )
+        NSGraphicsContext.restoreGraphicsState()
+
+        let image = NSImage(size: captureRect.size)
+        image.addRepresentation(bitmap)
+        return image
+    }
+
+    private func renderFullSnapshot() -> NSImage? {
+        let scaleFactor = window?.backingScaleFactor ?? screenScaleFactor
+        let pixelsWide = max(1, Int(bounds.width * scaleFactor))
+        let pixelsHigh = max(1, Int(bounds.height * scaleFactor))
+
+        guard let bitmap = NSBitmapImageRep(
+            bitmapDataPlanes: nil,
+            pixelsWide: pixelsWide,
+            pixelsHigh: pixelsHigh,
+            bitsPerSample: 8,
+            samplesPerPixel: 4,
+            hasAlpha: true,
+            isPlanar: false,
+            colorSpaceName: .deviceRGB,
+            bytesPerRow: 0,
+            bitsPerPixel: 0
+        ),
+        let graphicsContext = NSGraphicsContext(bitmapImageRep: bitmap) else {
+            return nil
+        }
+
+        bitmap.size = bounds.size
+
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = graphicsContext
+        graphicsContext.cgContext.scaleBy(x: scaleFactor, y: scaleFactor)
+        graphicsContext.cgContext.clear(bounds)
         drawBackground()
         drawAnnotations()
         NSGraphicsContext.restoreGraphicsState()
 
-        let image = NSImage(size: captureRect.size)
+        let image = NSImage(size: bounds.size)
         image.addRepresentation(bitmap)
         return image
     }
