@@ -327,7 +327,7 @@ final class StillZoomCanvasView: NSView {
                 annotations.append(.rectangle(rect: rect, color: currentColor))
             }
         case .ellipse:
-            let rect = normalizedRect(from: dragStartSourcePoint, to: sourcePoint)
+            let rect = circleRect(fromCenter: dragStartSourcePoint, to: sourcePoint)
             if rect.width > 1, rect.height > 1 {
                 annotations.append(.ellipse(rect: rect, color: currentColor))
             }
@@ -454,7 +454,7 @@ final class StillZoomCanvasView: NSView {
             guard let previewEndSourcePoint else {
                 return
             }
-            drawEllipse(normalizedRect(from: dragStartSourcePoint, to: previewEndSourcePoint), color: currentColor)
+            drawEllipse(circleRect(fromCenter: dragStartSourcePoint, to: previewEndSourcePoint), color: currentColor)
         }
     }
 
@@ -833,6 +833,16 @@ final class StillZoomCanvasView: NSView {
             y: min(start.y, end.y),
             width: abs(end.x - start.x),
             height: abs(end.y - start.y)
+        )
+    }
+
+    private func circleRect(fromCenter center: CGPoint, to edgePoint: CGPoint) -> CGRect {
+        let radius = hypot(edgePoint.x - center.x, edgePoint.y - center.y)
+        return CGRect(
+            x: center.x - radius,
+            y: center.y - radius,
+            width: radius * 2,
+            height: radius * 2
         )
     }
 }

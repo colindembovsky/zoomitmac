@@ -7,6 +7,7 @@ enum ToggleHotkeyModifierOption: String, CaseIterable {
     case option
     case command
     case shift
+    case controlCommand
     case controlOption
     case controlShift
     case optionShift
@@ -23,6 +24,8 @@ enum ToggleHotkeyModifierOption: String, CaseIterable {
             return "Command"
         case .shift:
             return "Shift"
+        case .controlCommand:
+            return "Control + Command"
         case .controlOption:
             return "Control + Option"
         case .controlShift:
@@ -46,6 +49,8 @@ enum ToggleHotkeyModifierOption: String, CaseIterable {
             return UInt32(cmdKey)
         case .shift:
             return UInt32(shiftKey)
+        case .controlCommand:
+            return UInt32(controlKey | cmdKey)
         case .controlOption:
             return UInt32(controlKey | optionKey)
         case .controlShift:
@@ -69,6 +74,8 @@ enum ToggleHotkeyModifierOption: String, CaseIterable {
             return "Cmd"
         case .shift:
             return "Shift"
+        case .controlCommand:
+            return "Ctrl+Cmd"
         case .controlOption:
             return "Ctrl+Opt"
         case .controlShift:
@@ -79,6 +86,35 @@ enum ToggleHotkeyModifierOption: String, CaseIterable {
             return "Cmd+Opt"
         case .commandShift:
             return "Cmd+Shift"
+        }
+    }
+
+    static func from(modifiers: NSEvent.ModifierFlags) -> ToggleHotkeyModifierOption? {
+        let significantModifiers = modifiers.intersection([.control, .option, .command, .shift])
+
+        switch significantModifiers {
+        case [.control]:
+            return .control
+        case [.option]:
+            return .option
+        case [.command]:
+            return .command
+        case [.shift]:
+            return .shift
+        case [.control, .command]:
+            return .controlCommand
+        case [.control, .option]:
+            return .controlOption
+        case [.control, .shift]:
+            return .controlShift
+        case [.option, .shift]:
+            return .optionShift
+        case [.command, .option]:
+            return .commandOption
+        case [.command, .shift]:
+            return .commandShift
+        default:
+            return nil
         }
     }
 }
@@ -270,5 +306,13 @@ enum AppConfiguration {
 
     private static func shortcutStorageKey(for action: AppShortcutAction) -> String {
         "shortcut.\(action.rawValue)"
+    }
+
+    static func resetShortcutsToDefaults() {
+        UserDefaults.standard.removeObject(forKey: toggleHotkeyKeyKey)
+        UserDefaults.standard.removeObject(forKey: toggleHotkeyModifierKey)
+        AppShortcutAction.allCases.forEach { action in
+            UserDefaults.standard.removeObject(forKey: shortcutStorageKey(for: action))
+        }
     }
 }
