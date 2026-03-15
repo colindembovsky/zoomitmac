@@ -55,6 +55,21 @@ const workflows = [
   }
 ];
 
+const installSteps = [
+  {
+    title: 'Download the release',
+    description: 'Use the Download for Mac button to grab the latest ZoomItMac ZIP release.'
+  },
+  {
+    title: 'Unzip the archive',
+    description: 'Open the downloaded ZIP so macOS extracts the ZoomItMac.app bundle.'
+  },
+  {
+    title: 'Move it to Applications',
+    description: 'Drag ZoomItMac.app into your Applications folder so it is installed like any other Mac app.'
+  }
+];
+
 const shortcutGroups = [
   {
     title: 'Default controls',
@@ -96,6 +111,7 @@ const shortcutGroups = [
       </a>
 
       <nav class="site-nav" aria-label="Primary">
+        <a href="#install">Install</a>
         <a href="#features">Features</a>
         <a href="#workflow">Workflow</a>
         <a href="#shortcuts">Shortcuts</a>
@@ -174,6 +190,38 @@ const shortcutGroups = [
             <strong>Clipboard ready</strong>
             <span>Save the whole view or a crop and paste it straight into the conversation.</span>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="install">
+      <div class="container">
+        <div class="section-heading">
+          <span>Install</span>
+          <h2>Install ZoomItMac in three quick steps.</h2>
+          <p>
+            Get the latest release onto your Mac, unpack it, and drop the app into Applications so it is ready whenever you need a fast still-zoom capture.
+          </p>
+        </div>
+
+        <div class="workflow">
+          {installSteps.map((step, index) => (
+            <article class="workflow-step">
+              <div class="workflow-step__index">{index + 1}</div>
+              <h3>{step.title}</h3>
+              <p>{step.description}</p>
+            </article>
+          ))}
+        </div>
+
+        <div class="install-note surface">
+          <div>
+            <h3>First launch note</h3>
+            <p>
+              The current release is not yet notarized by Apple, so macOS may warn that it cannot verify ZoomItMac. If that happens, right-click <code>ZoomItMac.app</code> in Applications and choose <code>Open</code>, or use <code>System Settings &gt; Privacy &amp; Security</code> and click <code>Open Anyway</code>.
+            </p>
+          </div>
+          <a class="button button--secondary" href={downloadUrl} target="_blank" rel="noreferrer">Download the latest release</a>
         </div>
       </div>
     </section>
