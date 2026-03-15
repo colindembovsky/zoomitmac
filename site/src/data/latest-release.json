@@ -1,7 +1,7 @@
 {
-  "tag": null,
+  "tag": "v0.1",
   "assetName": "ZoomItMac-macOS.zip",
-  "downloadUrl": "https://github.com/colindembovsky/zoomitmac/releases/latest/download/ZoomItMac-macOS.zip",
-  "releaseUrl": "https://github.com/colindembovsky/zoomitmac/releases/latest",
-  "updatedAt": null
+  "downloadUrl": "https://github.com/colindembovsky/zoomitmac/releases/download/v0.1/ZoomItMac-macOS.zip",
+  "releaseUrl": "https://github.com/colindembovsky/zoomitmac/releases/tag/v0.1",
+  "updatedAt": "2026-03-15T20:19:06Z"
 }
