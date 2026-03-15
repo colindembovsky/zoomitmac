@@ -1,5 +1,7 @@
 # ZoomItMac
 
+![Animated ZoomItMac demo](site/public/ZoomItMac.gif)
+
 `ZoomItMac` is a small macOS menu bar utility inspired by ZoomIt on Windows.
 
 It captures a still image of the current display, lets you pan and zoom that frozen image, then annotate and export it.
