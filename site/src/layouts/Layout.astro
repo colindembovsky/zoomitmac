@@ -1,4 +1,6 @@
 ---
+import { withBase } from '../utils/with-base';
+
 interface Props {
   title?: string;
   description?: string;
@@ -8,7 +10,7 @@ const {
   title = 'ZoomItMac',
   description = 'A fast, polished macOS still-zoom and annotation utility inspired by ZoomIt.'
 } = Astro.props;
-const faviconHref = `${import.meta.env.BASE_URL}favicon.svg`;
+const faviconHref = withBase('favicon.svg');
 ---
 
 <!doctype html>

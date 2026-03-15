@@ -1,9 +1,10 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import { withBase } from '../utils/with-base';
 import releaseInfo from '../data/latest-release.json';
 
-const heroImageSrc = `${import.meta.env.BASE_URL}ZoomItMac.gif`;
-const cliLogoSrc = `${import.meta.env.BASE_URL}cli-logo.png`;
+const heroImageSrc = withBase('ZoomItMac.gif');
+const cliLogoSrc = withBase('cli-logo.png');
 const downloadUrl = releaseInfo.downloadUrl;
 
 const features = [
