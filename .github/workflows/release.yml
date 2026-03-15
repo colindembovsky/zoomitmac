@@ -19,6 +19,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up Swift 6.2
+        uses: swift-actions/setup-swift@v3
+        with:
+          swift-version: "6.2"
+
       - name: Build release app bundle
         run: |
           APP_PATH="$(./scripts/build-app.sh release)"
