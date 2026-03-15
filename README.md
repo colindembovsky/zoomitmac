@@ -206,3 +206,7 @@ After that, launch it from `/Applications` like any normal macOS app.
 - This project is currently focused on **still zoom**, not live zoom
 - Local ad hoc builds are best for development/testing
 - A fully signed release build is the smoothest path for macOS privacy permissions
+
+## License
+
+This project is licensed under the MIT License. See [`LICENSE`](./LICENSE).
