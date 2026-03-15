@@ -2,6 +2,9 @@
 /.build
 /Packages
 /dist
+/site/node_modules
+/site/dist
+/site/.astro
 xcuserdata/
 DerivedData/
 .swiftpm/configuration/registries.json

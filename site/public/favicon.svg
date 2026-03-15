@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
+  <title>ZoomItMac</title>
+  <defs>
+    <linearGradient id="g" x1="0%" x2="100%" y1="0%" y2="100%">
+      <stop offset="0%" stop-color="#7c9cff" />
+      <stop offset="100%" stop-color="#53d6ff" />
+    </linearGradient>
+  </defs>
+  <rect x="10" y="10" width="108" height="108" rx="28" fill="#09090f" />
+  <circle cx="56" cy="56" r="26" fill="none" stroke="url(#g)" stroke-width="12" />
+  <path d="M76 76 103 103" stroke="url(#g)" stroke-linecap="round" stroke-width="12" />
+</svg>

@@ -105,6 +105,30 @@ If the app bundle does not exist yet, build it first with:
 ./scripts/build-app.sh
 ```
 
+## Website
+
+This repository also includes a small Astro-based static site in `site/`.
+
+It is intended for GitHub Pages and uses:
+
+- `site/` for the Astro app
+- `.github/workflows/pages.yml` for Pages deployment
+
+To run it locally:
+
+```bash
+cd site
+npm install
+npm run dev
+```
+
+To build it locally:
+
+```bash
+cd site
+npm run build
+```
+
 ## Using the app
 
 ### Start still zoom

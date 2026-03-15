@@ -1,0 +1,307 @@
+---
+import Layout from '../layouts/Layout.astro';
+import releaseInfo from '../data/latest-release.json';
+
+const heroImageSrc = `${import.meta.env.BASE_URL}ZoomItMac.gif`;
+const cliLogoSrc = `${import.meta.env.BASE_URL}cli-logo.png`;
+const downloadUrl = releaseInfo.downloadUrl;
+
+const features = [
+  {
+    icon: '⌘',
+    title: 'Fast still zoom',
+    description: 'Freeze the current screen, pan smoothly with the mouse, and zoom in with the wheel before locking the view for annotation.'
+  },
+  {
+    icon: '✎',
+    title: 'Inline markup',
+    description: 'Draw freehand, arrows, rectangles, and centered circles directly on top of the frozen image in a single focused overlay.'
+  },
+  {
+    icon: '⇪',
+    title: 'Save and share',
+    description: 'Save the full view or a selected region, copy it to the clipboard, and send it straight into chats, docs, or issue reports.'
+  },
+  {
+    icon: '⚙',
+    title: 'Custom shortcuts',
+    description: 'Rebind the global trigger and the in-zoom tool keys from a built-in shortcut recorder window with reset-to-defaults support.'
+  },
+  {
+    icon: '☾',
+    title: 'Menu bar utility',
+    description: 'Stay out of the way until you need it. ZoomItMac lives in the menu bar and launches instantly with a global shortcut.'
+  },
+  {
+    icon: '⤓',
+    title: 'Configurable exports',
+    description: 'Pick the save folder once, export the full view or a dragged region, and keep a clipboard copy ready to paste anywhere.'
+  }
+];
+
+const workflows = [
+  {
+    title: '1. Freeze the screen',
+    description: 'Hit the global shortcut to capture the current display. Move to pan and use the mouse wheel to control magnification.'
+  },
+  {
+    title: '2. Lock and annotate',
+    description: 'Left-click once to lock the view in place, then draw with freehand, arrows, rectangles, or circles in the same overlay.'
+  },
+  {
+    title: '3. Export instantly',
+    description: 'Use the save shortcut to export the whole view or drag out a region, then share the saved image or pasted clipboard copy.'
+  }
+];
+
+const shortcutGroups = [
+  {
+    title: 'Default controls',
+    items: [
+      ['Start still zoom', 'Ctrl+1'],
+      ['Lock view', 'Left click'],
+      ['Save mode', 'Ctrl+S'],
+      ['Exit', 'Esc']
+    ]
+  },
+  {
+    title: 'Annotation tools',
+    items: [
+      ['Freehand', 'Drag'],
+      ['Arrow', 'Ctrl+Drag'],
+      ['Rectangle', 'Cmd+Drag'],
+      ['Circle', 'Opt+Drag']
+    ]
+  },
+  {
+    title: 'Color keys',
+    items: [
+      ['Red pen', 'R'],
+      ['Blue pen', 'B'],
+      ['Green pen', 'G'],
+      ['Yellow pen', 'Y'],
+      ['Clear annotations', 'C']
+    ]
+  }
+];
+---
+
+<Layout title="ZoomItMac — Focused still zoom and annotation for macOS">
+  <header class="site-header">
+    <div class="container site-header__inner">
+      <a href="#top" class="brand">
+        <span class="brand__mark">⌕</span>
+        <span>ZoomItMac</span>
+      </a>
+
+      <nav class="site-nav" aria-label="Primary">
+        <a href="#features">Features</a>
+        <a href="#workflow">Workflow</a>
+        <a href="#shortcuts">Shortcuts</a>
+        <a href="#export">Export</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="container hero__stack">
+        <div class="hero__headline surface">
+          <h1>Zoom. Pan. Mark up. Save.</h1>
+        </div>
+
+        <aside class="hero__panel">
+          <div class="app-window">
+            <div class="app-window__topbar">
+              <div class="traffic-lights" aria-hidden="true">
+                <span></span><span></span><span></span>
+              </div>
+            </div>
+
+            <div class="hero-media-stage">
+              <figure class="hero-media">
+                <img
+                  class="hero-media__image"
+                  src={heroImageSrc}
+                  alt="Animated ZoomItMac demo showing still zoom, annotation, and screenshot export."
+                  width="1066"
+                  height="599"
+                  loading="eager"
+                  decoding="async"
+                />
+              </figure>
+            </div>
+          </div>
+        </aside>
+
+        <div class="hero__support surface">
+          <span class="eyebrow">Still zoom for demos, support, docs, and walkthroughs</span>
+          <p class="hero__lede">
+            ZoomItMac is a modern macOS menu bar utility inspired by ZoomIt on Windows. It freezes the screen, lets you pan and zoom a still image, and makes annotation and export feel fast enough for live demos and async communication.
+          </p>
+
+          <div class="cta-row">
+            <a class="button button--primary" href={downloadUrl} target="_blank" rel="noreferrer">Download for Mac</a>
+            <a class="button button--secondary" href="#workflow">See the workflow</a>
+            <a class="button button--secondary" href="#shortcuts">View shortcuts</a>
+          </div>
+        </div>
+
+        <div class="hero__made-with surface">
+          <span class="hero__made-with-label">Made with</span>
+          <span class="made-with__heart" role="img" aria-label="love">❤️</span>
+          <span>and</span>
+          <span class="copilot-lockup" aria-label="Copilot CLI">
+            <img
+              class="copilot-lockup__image"
+              src={cliLogoSrc}
+              alt=""
+              width="360"
+              height="304"
+              loading="eager"
+              decoding="async"
+            />
+            <span>Copilot CLI</span>
+          </span>
+        </div>
+
+        <div class="hero-stats">
+          <div class="hero-stat">
+            <strong>Still zoom</strong>
+            <span>Frozen overlay built for precise focus and markup.</span>
+          </div>
+          <div class="hero-stat">
+            <strong>Fast markup</strong>
+            <span>Freehand, arrows, rectangles, and centered circles in one overlay.</span>
+          </div>
+          <div class="hero-stat">
+            <strong>Clipboard ready</strong>
+            <span>Save the whole view or a crop and paste it straight into the conversation.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="features">
+      <div class="container">
+        <div class="section-heading">
+          <span>Features</span>
+          <h2>A focused tool, not a bloated utility suite.</h2>
+          <p>
+            ZoomItMac stays centered on the fastest workflow for explaining what matters on screen: freeze, focus, annotate, export, and move on.
+          </p>
+        </div>
+
+        <div class="feature-grid">
+          {features.map((feature) => (
+            <article class="card">
+              <div class="card__icon">{feature.icon}</div>
+              <h3>{feature.title}</h3>
+              <p>{feature.description}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section id="workflow">
+      <div class="container">
+        <div class="section-heading">
+          <span>Workflow</span>
+          <h2>A three-step capture flow that stays out of your way.</h2>
+          <p>
+            The app is optimized for support engineers, demo hosts, and technical writers who want less ceremony between spotting an issue and sharing a precise visual.
+          </p>
+        </div>
+
+        <div class="workflow">
+          {workflows.map((step, index) => (
+            <article class="workflow-step">
+              <div class="workflow-step__index">{index + 1}</div>
+              <h3>{step.title}</h3>
+              <p>{step.description}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section id="shortcuts">
+      <div class="container">
+        <div class="section-heading">
+          <span>Shortcuts</span>
+          <h2>Practical defaults, customizable when you need them.</h2>
+          <p>
+            ZoomItMac ships with sensible shortcuts and a built-in recorder window so users can remap keys without editing config files.
+          </p>
+        </div>
+
+        <div class="shortcut-grid">
+          {shortcutGroups.map((group) => (
+            <article class="shortcut-group">
+              <h3>{group.title}</h3>
+              <div class="shortcut-list">
+                {group.items.map(([label, shortcut]) => (
+                  <div class="shortcut-item">
+                    <span>{label}</span>
+                    <span>{shortcut}</span>
+                  </div>
+                ))}
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section id="export">
+      <div class="container">
+        <div class="section-heading">
+          <span>Export</span>
+          <h2>Capture the exact frame you want to share.</h2>
+          <p>
+            Save the entire annotated view or drag a crop region, copy the result to the clipboard, and keep your screenshots moving as fast as the conversation.
+          </p>
+        </div>
+
+        <div class="export-note surface">
+          <div>
+            <h3>What the export flow covers</h3>
+            <p>
+              Press <code>Ctrl+S</code> to enter save mode, hit <code>Enter</code> to grab the full image, or click-drag-release to capture just the highlighted region. The PNG is saved to the configured folder and copied to the clipboard at the same time.
+            </p>
+          </div>
+          <a class="button button--primary" href="#top">Back to top</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer__inner">
+      <span>ZoomItMac · macOS still zoom and annotation</span>
+      <span>Frozen zoom, fast markup, and clipboard-ready export for macOS</span>
+    </div>
+  </footer>
+
+  <script is:inline>
+    const navLinks = Array.from(document.querySelectorAll('.site-nav a'));
+    const sectionTargets = navLinks
+      .map((link) => document.querySelector(link.getAttribute('href')))
+      .filter(Boolean);
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          navLinks.forEach((link) => {
+            link.classList.toggle('is-active', link.getAttribute('href') === `#${entry.target.id}`);
+          });
+        }
+      },
+      { rootMargin: '-35% 0px -50% 0px', threshold: 0.01 }
+    );
+
+    sectionTargets.forEach((section) => observer.observe(section));
+  </script>
+</Layout>

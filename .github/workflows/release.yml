@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Build release app bundle
         run: |
@@ -40,3 +42,53 @@ jobs:
         with:
           files: release-assets/ZoomItMac-macOS.zip
           generate_release_notes: true
+
+      - name: Update latest release metadata
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          TAG_NAME: ${{ github.ref_name }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          git fetch origin "${DEFAULT_BRANCH}"
+          git checkout "${DEFAULT_BRANCH}"
+          git pull --ff-only origin "${DEFAULT_BRANCH}"
+
+          python3 - <<'PY'
+          import json
+          import os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          tag_name = os.environ["TAG_NAME"]
+          repository = os.environ["REPOSITORY"]
+          metadata_path = Path("site/src/data/latest-release.json")
+          metadata_path.parent.mkdir(parents=True, exist_ok=True)
+
+          metadata = {
+              "tag": tag_name,
+              "assetName": "ZoomItMac-macOS.zip",
+              "downloadUrl": f"https://github.com/{repository}/releases/download/{tag_name}/ZoomItMac-macOS.zip",
+              "releaseUrl": f"https://github.com/{repository}/releases/tag/{tag_name}",
+              "updatedAt": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+          }
+
+          metadata_path.write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
+          PY
+
+      - name: Commit latest release metadata
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          git add site/src/data/latest-release.json
+
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Update latest release metadata for ${TAG_NAME}" -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+          git push origin "HEAD:${DEFAULT_BRANCH}"
