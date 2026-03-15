@@ -83,6 +83,9 @@ final class StillZoomController {
         canvasView.onDismiss = { [weak self] in
             self?.dismiss()
         }
+        canvasView.onError = { [weak self] message in
+            self?.onError?(message)
+        }
 
         window.contentView = canvasView
         window.makeKeyAndOrderFront(nil)

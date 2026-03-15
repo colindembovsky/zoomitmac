@@ -19,8 +19,15 @@ private enum Annotation {
     case ellipse(rect: CGRect, color: NSColor)
 }
 
+private enum SaveMode {
+    case inactive
+    case awaitingChoice
+    case selecting(start: CGPoint, current: CGPoint)
+}
+
 final class StillZoomCanvasView: NSView {
     var onDismiss: (() -> Void)?
+    var onError: ((String) -> Void)?
 
     private let sourceImage: CGImage
     private let screenScaleFactor: CGFloat
@@ -40,6 +47,16 @@ final class StillZoomCanvasView: NSView {
     private var dragStartSourcePoint: CGPoint?
     private var currentFreehandPoints: [CGPoint] = []
     private var previewEndSourcePoint: CGPoint?
+    private var saveMode: SaveMode = .inactive
+
+    private var isSaveModeActive: Bool {
+        switch saveMode {
+        case .inactive:
+            return false
+        case .awaitingChoice, .selecting:
+            return true
+        }
+    }
 
     init(
         frame: NSRect,
@@ -71,6 +88,10 @@ final class StillZoomCanvasView: NSView {
     }
 
     override func mouseMoved(with event: NSEvent) {
+        if handleSaveModeMouseMove(with: event) {
+            return
+        }
+
         guard interactionMode == .navigation, currentDragMode == nil else {
             return
         }
@@ -82,6 +103,10 @@ final class StillZoomCanvasView: NSView {
     }
 
     override func mouseDown(with event: NSEvent) {
+        if handleSaveModeMouseDown(with: event) {
+            return
+        }
+
         guard interactionMode == .annotation else {
             lockForAnnotation()
             return
@@ -91,6 +116,10 @@ final class StillZoomCanvasView: NSView {
     }
 
     override func mouseDragged(with event: NSEvent) {
+        if handleSaveModeMouseDragged(with: event) {
+            return
+        }
+
         guard let currentDragMode else {
             return
         }
@@ -107,10 +136,18 @@ final class StillZoomCanvasView: NSView {
     }
 
     override func mouseUp(with event: NSEvent) {
+        if handleSaveModeMouseUp(with: event) {
+            return
+        }
+
         finishDrag(at: event)
     }
 
     override func rightMouseDown(with event: NSEvent) {
+        guard !isSaveModeActive else {
+            return
+        }
+
         guard interactionMode == .annotation else {
             return
         }
@@ -124,18 +161,30 @@ final class StillZoomCanvasView: NSView {
     }
 
     override func rightMouseDragged(with event: NSEvent) {
+        guard !isSaveModeActive else {
+            return
+        }
+
         if currentDragMode != nil {
             mouseDragged(with: event)
         }
     }
 
     override func rightMouseUp(with event: NSEvent) {
+        guard !isSaveModeActive else {
+            return
+        }
+
         if currentDragMode != nil {
             finishDrag(at: event)
         }
     }
 
     override func scrollWheel(with event: NSEvent) {
+        guard !isSaveModeActive else {
+            return
+        }
+
         guard interactionMode == .navigation else {
             return
         }
@@ -151,22 +200,57 @@ final class StillZoomCanvasView: NSView {
     }
 
     override func keyDown(with event: NSEvent) {
+        let modifierFlags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+
         guard let characters = event.charactersIgnoringModifiers?.uppercased() else {
             return
         }
 
-        switch characters {
-        case "\u{1B}":
+        if AppConfiguration.matchesShortcut(
+            characters: characters,
+            modifiers: modifierFlags,
+            action: .save
+        ) {
+            enterSaveMode()
+            return
+        }
+
+        if handleSaveModeKeyDown(characters) {
+            return
+        }
+
+        switch true {
+        case characters == "\u{1B}":
             onDismiss?()
-        case "R":
+        case AppConfiguration.matchesShortcut(
+            characters: characters,
+            modifiers: modifierFlags,
+            action: .red
+        ):
             currentColor = .systemRed
-        case "B":
+        case AppConfiguration.matchesShortcut(
+            characters: characters,
+            modifiers: modifierFlags,
+            action: .blue
+        ):
             currentColor = .systemBlue
-        case "G":
+        case AppConfiguration.matchesShortcut(
+            characters: characters,
+            modifiers: modifierFlags,
+            action: .green
+        ):
             currentColor = .systemGreen
-        case "Y":
+        case AppConfiguration.matchesShortcut(
+            characters: characters,
+            modifiers: modifierFlags,
+            action: .yellow
+        ):
             currentColor = .systemYellow
-        case "C":
+        case AppConfiguration.matchesShortcut(
+            characters: characters,
+            modifiers: modifierFlags,
+            action: .clear
+        ):
             annotations.removeAll()
             clearTransientState()
             needsDisplay = true
@@ -179,6 +263,7 @@ final class StillZoomCanvasView: NSView {
         drawBackground()
         drawAnnotations()
         drawPreviewAnnotation()
+        drawSaveOverlay()
         drawInteractionHint()
     }
 
@@ -205,6 +290,17 @@ final class StillZoomCanvasView: NSView {
     private func lockForAnnotation() {
         interactionMode = .annotation
         clearTransientState()
+        needsDisplay = true
+    }
+
+    private func enterSaveMode() {
+        clearTransientState()
+        saveMode = .awaitingChoice
+        needsDisplay = true
+    }
+
+    private func exitSaveMode() {
+        saveMode = .inactive
         needsDisplay = true
     }
 
@@ -329,6 +425,10 @@ final class StillZoomCanvasView: NSView {
     }
 
     private func drawPreviewAnnotation() {
+        guard !isSaveModeActive else {
+            return
+        }
+
         guard let currentDragMode,
               let dragStartSourcePoint else {
             return
@@ -360,11 +460,18 @@ final class StillZoomCanvasView: NSView {
 
     private func drawInteractionHint() {
         let message: String
-        switch interactionMode {
-        case .navigation:
-            message = "Move the mouse to pan, scroll to zoom, then left-click to lock the still image for annotation. Esc exits."
-        case .annotation:
-            message = "Annotate with drag. Ctrl-drag draws an arrow, Cmd-drag a rectangle, Option-drag a circle, R/B/G/Y change color, C clears, Esc exits."
+        switch saveMode {
+        case .awaitingChoice:
+            message = "Save mode: press Enter to save the full image, or left-click to start a capture rectangle. Esc cancels."
+        case .selecting:
+            message = "Save mode: drag to size the capture rectangle and release to save it. Enter saves the current selection. Esc cancels."
+        case .inactive:
+            switch interactionMode {
+            case .navigation:
+                message = "Move the mouse to pan, scroll to zoom, then left-click to lock the still image for annotation. Esc exits."
+            case .annotation:
+                message = "Annotate with drag. Ctrl-drag draws an arrow, Cmd-drag a rectangle, Option-drag a circle, \(AppConfiguration.key(for: .red))/\(AppConfiguration.key(for: .blue))/\(AppConfiguration.key(for: .green))/\(AppConfiguration.key(for: .yellow)) change color, \(AppConfiguration.key(for: .clear)) clears, Ctrl+\(AppConfiguration.key(for: .save)) saves, Esc exits."
+            }
         }
 
         let paragraphStyle = NSMutableParagraphStyle()
@@ -393,6 +500,39 @@ final class StillZoomCanvasView: NSView {
             with: textRect,
             options: [.usesLineFragmentOrigin, .usesFontLeading]
         )
+    }
+
+    private func drawSaveOverlay() {
+        guard isSaveModeActive else {
+            return
+        }
+
+        let selectionRect: CGRect?
+        switch saveMode {
+        case .inactive, .awaitingChoice:
+            selectionRect = nil
+        case let .selecting(start, current):
+            selectionRect = normalizedRect(from: start, to: current)
+        }
+
+        let dimPath = NSBezierPath(rect: bounds)
+        if let selectionRect, selectionRect.width > 0, selectionRect.height > 0 {
+            dimPath.append(NSBezierPath(rect: selectionRect))
+            dimPath.windingRule = .evenOdd
+        }
+
+        NSColor.black.withAlphaComponent(0.45).setFill()
+        dimPath.fill()
+
+        guard let selectionRect, selectionRect.width > 0, selectionRect.height > 0 else {
+            return
+        }
+
+        NSColor.white.setStroke()
+        let outlinePath = NSBezierPath(rect: selectionRect)
+        outlinePath.lineWidth = 2
+        outlinePath.setLineDash([6, 4], count: 2, phase: 0)
+        outlinePath.stroke()
     }
 
     private func draw(_ annotation: Annotation) {
@@ -502,6 +642,191 @@ final class StillZoomCanvasView: NSView {
         return normalizedRect(from: minPoint, to: maxPoint)
     }
 
+    private func handleSaveModeKeyDown(_ characters: String) -> Bool {
+        guard isSaveModeActive else {
+            return false
+        }
+
+        switch characters {
+        case "\u{1B}":
+            exitSaveMode()
+            return true
+        case "\r", "\u{3}":
+            switch saveMode {
+            case .awaitingChoice:
+                saveSnapshot(in: bounds)
+            case let .selecting(start, current):
+                let selectionRect = normalizedRect(from: start, to: current).integral
+                if selectionRect.width > 1, selectionRect.height > 1 {
+                    saveSnapshot(in: selectionRect)
+                } else {
+                    NSSound.beep()
+                }
+            case .inactive:
+                break
+            }
+            return true
+        default:
+            return true
+        }
+    }
+
+    private func handleSaveModeMouseMove(with event: NSEvent) -> Bool {
+        guard isSaveModeActive else {
+            return false
+        }
+
+        return true
+    }
+
+    private func handleSaveModeMouseDown(with event: NSEvent) -> Bool {
+        guard isSaveModeActive else {
+            return false
+        }
+
+        window?.makeFirstResponder(self)
+        let point = clampedViewPoint(convert(event.locationInWindow, from: nil))
+
+        switch saveMode {
+        case .awaitingChoice:
+            saveMode = .selecting(start: point, current: point)
+            needsDisplay = true
+        case .selecting:
+            break
+        case .inactive:
+            break
+        }
+
+        return true
+    }
+
+    private func handleSaveModeMouseDragged(with event: NSEvent) -> Bool {
+        guard isSaveModeActive else {
+            return false
+        }
+
+        if case let .selecting(start, _) = saveMode {
+            let point = clampedViewPoint(convert(event.locationInWindow, from: nil))
+            saveMode = .selecting(start: start, current: point)
+            needsDisplay = true
+        }
+
+        return true
+    }
+
+    private func handleSaveModeMouseUp(with event: NSEvent) -> Bool {
+        guard isSaveModeActive else {
+            return false
+        }
+
+        guard case let .selecting(start, _) = saveMode else {
+            return true
+        }
+
+        let point = clampedViewPoint(convert(event.locationInWindow, from: nil))
+        let selectionRect = normalizedRect(from: start, to: point).integral
+
+        if selectionRect.width > 1, selectionRect.height > 1 {
+            saveSnapshot(in: selectionRect)
+        } else {
+            NSSound.beep()
+            saveMode = .awaitingChoice
+            needsDisplay = true
+        }
+
+        return true
+    }
+
+    private func clampedViewPoint(_ viewPoint: CGPoint) -> CGPoint {
+        CGPoint(
+            x: min(max(0, viewPoint.x), bounds.width),
+            y: min(max(0, viewPoint.y), bounds.height)
+        )
+    }
+
+    private func saveSnapshot(in renderRect: CGRect) {
+        do {
+            guard let image = renderSnapshot(in: renderRect) else {
+                throw SaveError.renderFailed
+            }
+
+            try writeSnapshot(image)
+            try copySnapshotToPasteboard(image)
+            exitSaveMode()
+        } catch {
+            onError?(error.localizedDescription)
+        }
+    }
+
+    private func renderSnapshot(in renderRect: CGRect) -> NSImage? {
+        let captureRect = renderRect.integral.intersection(bounds).integral
+        guard captureRect.width > 0, captureRect.height > 0 else {
+            return nil
+        }
+
+        let scaleFactor = window?.backingScaleFactor ?? screenScaleFactor
+        let pixelsWide = max(1, Int(captureRect.width * scaleFactor))
+        let pixelsHigh = max(1, Int(captureRect.height * scaleFactor))
+
+        guard let bitmap = NSBitmapImageRep(
+            bitmapDataPlanes: nil,
+            pixelsWide: pixelsWide,
+            pixelsHigh: pixelsHigh,
+            bitsPerSample: 8,
+            samplesPerPixel: 4,
+            hasAlpha: true,
+            isPlanar: false,
+            colorSpaceName: .deviceRGB,
+            bytesPerRow: 0,
+            bitsPerPixel: 0
+        ),
+        let graphicsContext = NSGraphicsContext(bitmapImageRep: bitmap) else {
+            return nil
+        }
+
+        bitmap.size = captureRect.size
+
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = graphicsContext
+        graphicsContext.cgContext.clear(CGRect(origin: .zero, size: captureRect.size))
+        graphicsContext.cgContext.translateBy(x: -captureRect.minX, y: -captureRect.minY)
+        drawBackground()
+        drawAnnotations()
+        NSGraphicsContext.restoreGraphicsState()
+
+        let image = NSImage(size: captureRect.size)
+        image.addRepresentation(bitmap)
+        return image
+    }
+
+    private func writeSnapshot(_ image: NSImage) throws {
+        let saveFolderURL = AppConfiguration.saveFolderURL
+        try FileManager.default.createDirectory(at: saveFolderURL, withIntermediateDirectories: true)
+
+        let fileURL = saveFolderURL.appendingPathComponent(Self.snapshotFilename())
+        guard let tiffData = image.tiffRepresentation,
+              let bitmap = NSBitmapImageRep(data: tiffData),
+              let pngData = bitmap.representation(using: .png, properties: [:]) else {
+            throw SaveError.pngEncodingFailed
+        }
+
+        try pngData.write(to: fileURL, options: .atomic)
+    }
+
+    private func copySnapshotToPasteboard(_ image: NSImage) throws {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        guard pasteboard.writeObjects([image]) else {
+            throw SaveError.clipboardWriteFailed
+        }
+    }
+
+    private static func snapshotFilename() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyyMMdd-HHmmss-SSS"
+        return "ZoomItMac-\(formatter.string(from: Date())).png"
+    }
+
     private func normalizedRect(from start: CGPoint, to end: CGPoint) -> CGRect {
         CGRect(
             x: min(start.x, end.x),
@@ -509,5 +834,22 @@ final class StillZoomCanvasView: NSView {
             width: abs(end.x - start.x),
             height: abs(end.y - start.y)
         )
+    }
+}
+
+private enum SaveError: LocalizedError {
+    case renderFailed
+    case pngEncodingFailed
+    case clipboardWriteFailed
+
+    var errorDescription: String? {
+        switch self {
+        case .renderFailed:
+            return "Unable to render the current zoom image for saving."
+        case .pngEncodingFailed:
+            return "Unable to encode the saved image as PNG."
+        case .clipboardWriteFailed:
+            return "The image was saved, but ZoomItMac could not copy it to the clipboard."
+        }
     }
 }

@@ -1,0 +1,42 @@
+name: Build and Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    runs-on: macos-14
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build release app bundle
+        run: |
+          APP_PATH="$(./scripts/build-app.sh release)"
+          echo "APP_PATH=${APP_PATH}" >> "$GITHUB_ENV"
+
+      - name: Package release asset
+        run: |
+          mkdir -p release-assets
+          ditto -c -k --sequesterRsrc --keepParent "${APP_PATH}" "release-assets/ZoomItMac-macOS.zip"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZoomItMac-macOS
+          path: release-assets/ZoomItMac-macOS.zip
+          if-no-files-found: error
+
+      - name: Attach asset to GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-assets/ZoomItMac-macOS.zip
+          generate_release_notes: true

@@ -32,10 +32,15 @@ final class HotkeyManager {
             return
         }
 
+        guard let keyCode = ShortcutKeyMapper.carbonKeyCode(for: AppConfiguration.toggleHotkeyKey) else {
+            stop()
+            return
+        }
+
         let hotKeyID = EventHotKeyID(signature: signature, id: stillZoomHotKeyID)
         let registerStatus = RegisterEventHotKey(
-            UInt32(kVK_ANSI_1),
-            UInt32(controlKey),
+            keyCode,
+            AppConfiguration.toggleHotkeyModifier.carbonFlags,
             hotKeyID,
             GetApplicationEventTarget(),
             0,
@@ -45,6 +50,11 @@ final class HotkeyManager {
         if registerStatus != noErr {
             stop()
         }
+    }
+
+    func restart() {
+        stop()
+        start()
     }
 
     func stop() {
