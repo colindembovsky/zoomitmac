@@ -88,7 +88,6 @@ final class ShortcutCustomizationWindowController: NSWindowController, NSTableVi
         super.init(window: window)
         window.delegate = self
         setupUI()
-        installKeyMonitor()
     }
 
     @available(*, unavailable)
@@ -97,6 +96,7 @@ final class ShortcutCustomizationWindowController: NSWindowController, NSTableVi
     }
 
     func show() {
+        installKeyMonitor()
         window?.center()
         window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
@@ -159,6 +159,7 @@ final class ShortcutCustomizationWindowController: NSWindowController, NSTableVi
 
     func windowWillClose(_ notification: Notification) {
         stopRecording(withMessage: "Click a command to record a new shortcut.")
+        removeKeyMonitor()
     }
 
     private func setupUI() {
@@ -220,6 +221,10 @@ final class ShortcutCustomizationWindowController: NSWindowController, NSTableVi
     }
 
     private func installKeyMonitor() {
+        guard keyMonitor == nil else {
+            return
+        }
+
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self else {
                 return event
@@ -233,6 +238,15 @@ final class ShortcutCustomizationWindowController: NSWindowController, NSTableVi
             self.handleRecordedShortcut(event, for: recordingItem)
             return nil
         }
+    }
+
+    private func removeKeyMonitor() {
+        guard let keyMonitor else {
+            return
+        }
+
+        NSEvent.removeMonitor(keyMonitor)
+        self.keyMonitor = nil
     }
 
     private func handleRecordedShortcut(_ event: NSEvent, for item: ShortcutListItem) {

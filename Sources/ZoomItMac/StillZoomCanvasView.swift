@@ -407,7 +407,13 @@ final class StillZoomCanvasView: NSView {
     }
 
     private func drawBackground() {
-        let cropRect = visibleSourceRect.integral
+        let imageBounds = CGRect(
+            x: 0,
+            y: 0,
+            width: sourceImage.width,
+            height: sourceImage.height
+        )
+        let cropRect = visibleSourceRect.integral.intersection(imageBounds)
         guard cropRect.width > 0,
               cropRect.height > 0,
               let croppedImage = sourceImage.cropping(to: cropRect) else {
