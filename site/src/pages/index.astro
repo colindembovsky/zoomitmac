@@ -6,6 +6,7 @@ import releaseInfo from '../data/latest-release.json';
 const heroImageSrc = withBase('ZoomItMac.gif');
 const cliLogoSrc = withBase('cli-logo.png');
 const downloadUrl = releaseInfo.downloadUrl;
+const repositoryUrl = 'https://github.com/colindembovsky/zoomitmac';
 
 const features = [
   {
@@ -172,6 +173,7 @@ const shortcutGroups = [
         <div class="hero__support surface">
           <div class="cta-row">
             <a class="button button--primary" href={downloadUrl} target="_blank" rel="noreferrer">Download for Mac</a>
+            <a class="button button--secondary" href={repositoryUrl} target="_blank" rel="noreferrer">View on GitHub</a>
             <a class="button button--secondary" href="#workflow">See the workflow</a>
             <a class="button button--secondary" href="#shortcuts">View shortcuts</a>
           </div>
