@@ -13,10 +13,10 @@ private enum DragMode {
 }
 
 private enum Annotation {
-    case freehand(points: [CGPoint], color: NSColor)
-    case arrow(start: CGPoint, end: CGPoint, color: NSColor)
-    case rectangle(rect: CGRect, color: NSColor)
-    case ellipse(rect: CGRect, color: NSColor)
+    case freehand(points: [CGPoint], color: NSColor, lineWidth: CGFloat)
+    case arrow(start: CGPoint, end: CGPoint, color: NSColor, lineWidth: CGFloat)
+    case rectangle(rect: CGRect, color: NSColor, lineWidth: CGFloat)
+    case ellipse(rect: CGRect, color: NSColor, lineWidth: CGFloat)
 }
 
 private enum SaveMode {
@@ -34,7 +34,6 @@ final class StillZoomCanvasView: NSView {
 
     private let minZoom: CGFloat = 1.1
     private let maxZoom: CGFloat = 8.0
-    private let annotationLineWidth: CGFloat = 4.0
     private var zoomLevel: CGFloat = 2.0
     private var panCenter: CGPoint
     private var visibleSourceRect: CGRect = .zero
@@ -58,6 +57,10 @@ final class StillZoomCanvasView: NSView {
         }
     }
 
+    private var currentAnnotationLineWidth: CGFloat {
+        AppConfiguration.penThickness.lineWidth
+    }
+
     init(
         frame: NSRect,
         sourceImage: CGImage,
@@ -74,6 +77,10 @@ final class StillZoomCanvasView: NSView {
     @available(*, unavailable)
     required init?(coder: NSCoder) {
         fatalError("init(coder:) is not supported")
+    }
+
+    func refreshAnnotationAppearance() {
+        needsDisplay = true
     }
 
     override var acceptsFirstResponder: Bool { true }
@@ -315,21 +322,46 @@ final class StillZoomCanvasView: NSView {
         switch currentDragMode {
         case .freehand:
             if currentFreehandPoints.count > 1 {
-                annotations.append(.freehand(points: currentFreehandPoints, color: currentColor))
+                annotations.append(
+                    .freehand(
+                        points: currentFreehandPoints,
+                        color: currentColor,
+                        lineWidth: currentAnnotationLineWidth
+                    )
+                )
             }
         case .arrow:
             if dragStartSourcePoint != sourcePoint {
-                annotations.append(.arrow(start: dragStartSourcePoint, end: sourcePoint, color: currentColor))
+                annotations.append(
+                    .arrow(
+                        start: dragStartSourcePoint,
+                        end: sourcePoint,
+                        color: currentColor,
+                        lineWidth: currentAnnotationLineWidth
+                    )
+                )
             }
         case .rectangle:
             let rect = normalizedRect(from: dragStartSourcePoint, to: sourcePoint)
             if rect.width > 1, rect.height > 1 {
-                annotations.append(.rectangle(rect: rect, color: currentColor))
+                annotations.append(
+                    .rectangle(
+                        rect: rect,
+                        color: currentColor,
+                        lineWidth: currentAnnotationLineWidth
+                    )
+                )
             }
         case .ellipse:
             let rect = circleRect(fromCenter: dragStartSourcePoint, to: sourcePoint)
             if rect.width > 1, rect.height > 1 {
-                annotations.append(.ellipse(rect: rect, color: currentColor))
+                annotations.append(
+                    .ellipse(
+                        rect: rect,
+                        color: currentColor,
+                        lineWidth: currentAnnotationLineWidth
+                    )
+                )
             }
         }
 
@@ -445,22 +477,35 @@ final class StillZoomCanvasView: NSView {
             guard currentFreehandPoints.count > 1 else {
                 return
             }
-            drawFreehand(points: currentFreehandPoints, color: currentColor)
+            drawFreehand(points: currentFreehandPoints, color: currentColor, lineWidth: currentAnnotationLineWidth)
         case .arrow:
             guard let previewEndSourcePoint else {
                 return
             }
-            drawArrow(from: dragStartSourcePoint, to: previewEndSourcePoint, color: currentColor)
+            drawArrow(
+                from: dragStartSourcePoint,
+                to: previewEndSourcePoint,
+                color: currentColor,
+                lineWidth: currentAnnotationLineWidth
+            )
         case .rectangle:
             guard let previewEndSourcePoint else {
                 return
             }
-            drawRectangle(normalizedRect(from: dragStartSourcePoint, to: previewEndSourcePoint), color: currentColor)
+            drawRectangle(
+                normalizedRect(from: dragStartSourcePoint, to: previewEndSourcePoint),
+                color: currentColor,
+                lineWidth: currentAnnotationLineWidth
+            )
         case .ellipse:
             guard let previewEndSourcePoint else {
                 return
             }
-            drawEllipse(circleRect(fromCenter: dragStartSourcePoint, to: previewEndSourcePoint), color: currentColor)
+            drawEllipse(
+                circleRect(fromCenter: dragStartSourcePoint, to: previewEndSourcePoint),
+                color: currentColor,
+                lineWidth: currentAnnotationLineWidth
+            )
         }
     }
 
@@ -543,18 +588,18 @@ final class StillZoomCanvasView: NSView {
 
     private func draw(_ annotation: Annotation) {
         switch annotation {
-        case let .freehand(points, color):
-            drawFreehand(points: points, color: color)
-        case let .arrow(start, end, color):
-            drawArrow(from: start, to: end, color: color)
-        case let .rectangle(rect, color):
-            drawRectangle(rect, color: color)
-        case let .ellipse(rect, color):
-            drawEllipse(rect, color: color)
+        case let .freehand(points, color, lineWidth):
+            drawFreehand(points: points, color: color, lineWidth: lineWidth)
+        case let .arrow(start, end, color, lineWidth):
+            drawArrow(from: start, to: end, color: color, lineWidth: lineWidth)
+        case let .rectangle(rect, color, lineWidth):
+            drawRectangle(rect, color: color, lineWidth: lineWidth)
+        case let .ellipse(rect, color, lineWidth):
+            drawEllipse(rect, color: color, lineWidth: lineWidth)
         }
     }
 
-    private func drawFreehand(points: [CGPoint], color: NSColor) {
+    private func drawFreehand(points: [CGPoint], color: NSColor, lineWidth: CGFloat) {
         guard points.count > 1 else {
             return
         }
@@ -562,7 +607,7 @@ final class StillZoomCanvasView: NSView {
         let path = NSBezierPath()
         path.lineCapStyle = .round
         path.lineJoinStyle = .round
-        path.lineWidth = annotationLineWidth
+        path.lineWidth = lineWidth
         color.setStroke()
 
         let transformedPoints = points.map(viewPointFromSource)
@@ -573,7 +618,7 @@ final class StillZoomCanvasView: NSView {
         path.stroke()
     }
 
-    private func drawArrow(from start: CGPoint, to end: CGPoint, color: NSColor) {
+    private func drawArrow(from start: CGPoint, to end: CGPoint, color: NSColor, lineWidth: CGFloat) {
         let startPoint = viewPointFromSource(start)
         let endPoint = viewPointFromSource(end)
         let deltaX = endPoint.x - startPoint.x
@@ -589,12 +634,12 @@ final class StillZoomCanvasView: NSView {
         let linePath = NSBezierPath()
         linePath.lineCapStyle = .round
         linePath.lineJoinStyle = .round
-        linePath.lineWidth = annotationLineWidth
+        linePath.lineWidth = lineWidth
         linePath.move(to: startPoint)
         linePath.line(to: endPoint)
         linePath.stroke()
 
-        let headLength = max(16, annotationLineWidth * 4)
+        let headLength = max(16, lineWidth * 4)
         let headAngle: CGFloat = .pi / 7
         let angle = atan2(deltaY, deltaX)
 
@@ -610,7 +655,7 @@ final class StillZoomCanvasView: NSView {
         let headPath = NSBezierPath()
         headPath.lineCapStyle = .round
         headPath.lineJoinStyle = .round
-        headPath.lineWidth = annotationLineWidth
+        headPath.lineWidth = lineWidth
         headPath.move(to: endPoint)
         headPath.line(to: leftPoint)
         headPath.move(to: endPoint)
@@ -618,7 +663,7 @@ final class StillZoomCanvasView: NSView {
         headPath.stroke()
     }
 
-    private func drawRectangle(_ rect: CGRect, color: NSColor) {
+    private func drawRectangle(_ rect: CGRect, color: NSColor, lineWidth: CGFloat) {
         guard rect.width > 0, rect.height > 0 else {
             return
         }
@@ -626,11 +671,11 @@ final class StillZoomCanvasView: NSView {
         color.setStroke()
         let viewRect = transformedRect(from: rect)
         let path = NSBezierPath(rect: viewRect)
-        path.lineWidth = annotationLineWidth
+        path.lineWidth = lineWidth
         path.stroke()
     }
 
-    private func drawEllipse(_ rect: CGRect, color: NSColor) {
+    private func drawEllipse(_ rect: CGRect, color: NSColor, lineWidth: CGFloat) {
         guard rect.width > 0, rect.height > 0 else {
             return
         }
@@ -638,7 +683,7 @@ final class StillZoomCanvasView: NSView {
         color.setStroke()
         let viewRect = transformedRect(from: rect)
         let path = NSBezierPath(ovalIn: viewRect)
-        path.lineWidth = annotationLineWidth
+        path.lineWidth = lineWidth
         path.stroke()
     }
 

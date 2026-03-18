@@ -58,6 +58,10 @@ final class StillZoomController {
         onDismiss?()
     }
 
+    func refreshAnnotationAppearance() {
+        canvasView?.refreshAnnotationAppearance()
+    }
+
     static func requestScreenCapturePermissionOnLaunch() -> ScreenCapturePermissionStatus {
         if CGPreflightScreenCaptureAccess() {
             return .granted

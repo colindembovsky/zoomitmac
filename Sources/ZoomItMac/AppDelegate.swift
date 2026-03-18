@@ -4,6 +4,7 @@ import AppKit
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
     private var toggleMenuItem: NSMenuItem?
+    private var penThicknessMenuItems: [PenThicknessOption: NSMenuItem] = [:]
     private var shortcutCustomizationWindowController: ShortcutCustomizationWindowController?
     private let hotkeyManager = HotkeyManager()
     private var stillZoomController: StillZoomController?
@@ -34,6 +35,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc
     private func handleChooseSaveFolderMenuItem() {
         chooseSaveFolder()
+    }
+
+    @objc
+    private func handlePenThicknessMenuItem(_ sender: NSMenuItem) {
+        guard let rawValue = sender.representedObject as? String,
+              let thickness = PenThicknessOption(rawValue: rawValue) else {
+            return
+        }
+
+        AppConfiguration.penThickness = thickness
+        updatePenThicknessMenuState()
+        stillZoomController?.refreshAnnotationAppearance()
     }
 
     @objc
@@ -104,6 +117,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         saveFolderItem.target = self
         menu.addItem(saveFolderItem)
 
+        let penThicknessItem = NSMenuItem(title: "Pen Thickness", action: nil, keyEquivalent: "")
+        let penThicknessMenu = NSMenu(title: "Pen Thickness")
+        PenThicknessOption.allCases.forEach { thickness in
+            let item = NSMenuItem(
+                title: thickness.displayName,
+                action: #selector(handlePenThicknessMenuItem(_:)),
+                keyEquivalent: ""
+            )
+            item.target = self
+            item.representedObject = thickness.rawValue
+            penThicknessMenu.addItem(item)
+            penThicknessMenuItems[thickness] = item
+        }
+        menu.addItem(penThicknessItem)
+        menu.setSubmenu(penThicknessMenu, for: penThicknessItem)
+        updatePenThicknessMenuState()
+
         let customizeShortcutsItem = NSMenuItem(
             title: "Customize Shortcuts…",
             action: #selector(handleCustomizeShortcutsMenuItem),
@@ -128,6 +158,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func updateToggleMenuItemTitle() {
         toggleMenuItem?.title = "Toggle Still Zoom (\(AppConfiguration.toggleHotkeyDisplayString))"
+    }
+
+    private func updatePenThicknessMenuState() {
+        let selectedThickness = AppConfiguration.penThickness
+        penThicknessMenuItems.forEach { thickness, item in
+            item.state = thickness == selectedThickness ? .on : .off
+        }
     }
 
     private func chooseSaveFolder() {

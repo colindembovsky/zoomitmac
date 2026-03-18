@@ -119,6 +119,34 @@ enum ToggleHotkeyModifierOption: String, CaseIterable {
     }
 }
 
+enum PenThicknessOption: String, CaseIterable {
+    case standard
+    case thick
+    case extraThick
+
+    var displayName: String {
+        switch self {
+        case .standard:
+            return "Standard"
+        case .thick:
+            return "Thick"
+        case .extraThick:
+            return "Extra Thick"
+        }
+    }
+
+    var lineWidth: CGFloat {
+        switch self {
+        case .standard:
+            return 4.0
+        case .thick:
+            return 8.0
+        case .extraThick:
+            return 12.0
+        }
+    }
+}
+
 enum AppShortcutAction: String, CaseIterable {
     case red
     case blue
@@ -227,6 +255,7 @@ enum AppConfiguration {
     private static let saveFolderKey = "saveFolderURL"
     private static let toggleHotkeyKeyKey = "toggleHotkeyKey"
     private static let toggleHotkeyModifierKey = "toggleHotkeyModifier"
+    private static let penThicknessKey = "penThickness"
 
     static var defaultSaveFolderURL: URL {
         FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Desktop", isDirectory: true)
@@ -271,6 +300,19 @@ enum AppConfiguration {
 
     static var toggleHotkeyDisplayString: String {
         "\(toggleHotkeyModifier.displayPrefix)+\(toggleHotkeyKey)"
+    }
+
+    static var penThickness: PenThicknessOption {
+        get {
+            guard let rawValue = UserDefaults.standard.string(forKey: penThicknessKey),
+                  let thickness = PenThicknessOption(rawValue: rawValue) else {
+                return .thick
+            }
+            return thickness
+        }
+        set {
+            UserDefaults.standard.set(newValue.rawValue, forKey: penThicknessKey)
+        }
     }
 
     static func key(for action: AppShortcutAction) -> String {

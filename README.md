@@ -26,6 +26,7 @@ It captures a still image of the current display, lets you pan and zoom that fro
   - click-drag-release saves a selected rectangle
   - saved images are also copied to the clipboard
 - Configurable save folder
+- Configurable pen thickness
 - Menu option to customize shortcuts
 - Menu bar icon with quit action
 
@@ -189,6 +190,16 @@ You can change:
 - red / blue / green / yellow keys
 - clear key
 - save key (`Ctrl+<key>`)
+
+### Pen thickness
+
+Use the menu bar icon and choose:
+
+```text
+Pen Thickness
+```
+
+Then pick `Standard`, `Thick`, or `Extra Thick` for annotation strokes. The default is `Thick`.
 
 ## Install from a release
 
